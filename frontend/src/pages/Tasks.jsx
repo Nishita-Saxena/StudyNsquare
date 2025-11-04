@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { toast } from "react-hot-toast";
 
 export default function Tasks() {
   const [tasks, setTasks] = useState([]);
@@ -16,7 +17,7 @@ export default function Tasks() {
   const storedUser = JSON.parse(localStorage.getItem("user"));
   const userId = storedUser ? storedUser._id : null;
 
-  const subjects = ["Mathematics", "Physics", "Chemistry", "English"];
+  // Manual subject entry requested; dropdown removed
 
   // Fetch tasks
   useEffect(() => {
@@ -53,10 +54,10 @@ export default function Tasks() {
         importance: "Medium",
         status: "Pending",
       });
-      alert("✅ Task added successfully!");
+      toast.success("Task added");
     } catch (err) {
       console.error("Error adding task:", err);
-      alert("❌ Error adding task. Check console for details.");
+      toast.error("Error adding task");
     }
   };
 
@@ -73,13 +74,13 @@ export default function Tasks() {
   };
 
   return (
-    <div className="flex flex-col items-center min-h-screen p-8 bg-gradient-to-br from-blue-100 via-white to-indigo-100">
-      <h1 className="mb-6 text-3xl font-bold text-gray-800">📝 Tasks</h1>
+    <div className="flex flex-col items-center p-2 md:p-4">
+      <h1 className="mb-6 text-3xl font-bold text-gray-800 dark:text-gray-100">📝 Tasks</h1>
 
       {/* Add Task Form */}
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-lg p-8 mb-10 space-y-6 bg-white shadow-lg rounded-2xl"
+        className="w-full max-w-lg p-6 mb-10 space-y-6 bg-white dark:bg-gray-800 shadow-lg rounded-2xl"
       >
         <div>
           <label className="block mb-2 font-semibold text-gray-700">Task Name</label>
@@ -96,18 +97,15 @@ export default function Tasks() {
 
         <div>
           <label className="block mb-2 font-semibold text-gray-700">Related Subject</label>
-          <select
+          <input
+            type="text"
             name="relatedSubject"
             value={formData.relatedSubject}
             onChange={handleChange}
+            placeholder="e.g., Physics / DSA"
             required
             className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400"
-          >
-            <option value="">Select Subject</option>
-            {subjects.map((s, i) => (
-              <option key={i} value={s}>{s}</option>
-            ))}
-          </select>
+          />
         </div>
 
         <div>
@@ -144,7 +142,7 @@ export default function Tasks() {
 
       {/* Task List */}
       <div className="w-full max-w-3xl">
-        <h2 className="mb-4 text-2xl font-semibold text-gray-800">Your Tasks</h2>
+        <h2 className="mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-100">Your Tasks</h2>
         {tasks.length === 0 ? (
           <p className="text-gray-600">No tasks yet. Add one above 👆</p>
         ) : (
@@ -152,9 +150,7 @@ export default function Tasks() {
             {tasks.map((task) => (
               <div
                 key={task._id}
-                className={`p-4 rounded-xl shadow-md ${
-                  task.status === "Completed" ? "bg-green-100" : "bg-white"
-                }`}
+                className={`p-4 rounded-xl shadow-md ${task.status === "Completed" ? "bg-green-100" : "bg-white dark:bg-gray-900"}`}
               >
                 <div className="flex justify-between">
                   <div>

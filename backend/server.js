@@ -5,7 +5,9 @@ import cors from "cors";
 import authRoutes from "./routes/authRoutes.js";
 import taskRoutes from "./routes/taskRoutes.js";
 import plannerRoutes from "./routes/plannerRoutes.js";
-import sessionRoutes from "./routes/SessionRoutes.js";
+import sessionRoutes from "./routes/sessionRoutes.js";
+import authMiddleware from "./middleware/authMiddleware.js";
+import aiRoutes from "./routes/aiRoutes.js";
 
 dotenv.config();
 
@@ -20,11 +22,11 @@ app.get("/", (req, res) => {
 
 // Auth routes
 app.use("/api/auth", authRoutes);
-// Task routes
-app.use("/api/tasks", taskRoutes);
-// Planner routes
-app.use("/api/planner", plannerRoutes);
-app.use("/api/sessions", sessionRoutes);
+// Protected routes
+app.use("/api/tasks", authMiddleware, taskRoutes);
+app.use("/api/planner", authMiddleware, plannerRoutes);
+app.use("/api/sessions", authMiddleware, sessionRoutes);
+app.use("/api/ai", authMiddleware, aiRoutes);
 
 // MongoDB connection
 const PORT = process.env.PORT || 5000;
@@ -41,12 +43,4 @@ mongoose
   .catch((err) => console.error("❌ MongoDB connection error:", err));
 
 
-  app.get("/api/tasks", async (req, res) => {
-  try {
-    const { date } = req.query;
-    const tasks = await Tasks.find({ date }); // date field in your MongoDB Task model
-    res.json(tasks);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to fetch tasks" });
-  }
-});
+// Note: any legacy test routes should be removed or updated

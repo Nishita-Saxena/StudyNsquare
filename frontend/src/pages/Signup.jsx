@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
 
 const Signup = () => {
   const [form, setForm] = useState({
@@ -35,10 +36,12 @@ const Signup = () => {
       });
 
       setMessage("✅ Signup successful! Redirecting...");
+      toast.success("Signup successful");
       setTimeout(() => navigate("/login"), 1500);
     } catch (error) {
       console.error(error);
       setMessage("Signup failed ❌ (maybe user already exists)");
+      toast.error("Signup failed");
     }
   };
 

@@ -31,41 +31,51 @@ function CalendarPage() {
   };
 
   return (
-    <div className="flex flex-col items-center min-h-screen p-6 bg-gradient-to-b from-blue-50 to-blue-100">
-      <h1 className="mb-6 text-3xl font-bold text-blue-700">📅 Study Planner Calendar</h1>
+    <div className="flex flex-col items-center p-2 md:p-6">
+      <div className="w-full max-w-5xl">
+        <h1 className="mb-6 text-3xl font-extrabold text-indigo-700 dark:text-indigo-300">📅 Study Planner Calendar</h1>
 
-      <div className="p-4 bg-white shadow-lg rounded-xl">
-        <Calendar onChange={setDate} value={date} />
-      </div>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          <div className="md:col-span-2">
+            <div className="relative p-4 bg-gradient-to-br from-white to-indigo-50 dark:from-gray-800 dark:to-gray-900 shadow-xl rounded-2xl overflow-hidden">
+              <div className="absolute -top-10 -right-10 h-28 w-28 rounded-full bg-indigo-200/30 blur-2xl" />
+              <Calendar
+                onChange={setDate}
+                value={date}
+                className="w-full rounded-xl overflow-hidden calendar-modern"
+              />
+            </div>
+          </div>
 
-      <div className="w-full max-w-md mt-6">
-        <h2 className="mb-3 text-xl font-semibold text-gray-800">
-          Tasks on {date.toDateString()}
-        </h2>
+          <div className="md:col-span-1">
+            <div className="p-4 bg-white dark:bg-gray-800 shadow-xl rounded-2xl h-full">
+              <h2 className="mb-3 text-xl font-semibold text-gray-800 dark:text-gray-100">
+                Tasks on {date.toDateString()}
+              </h2>
 
-        {tasks.length > 0 ? (
-          <ul className="space-y-2">
-            {tasks.map((task) => (
-              <li
-                key={task._id}
-                className="p-3 bg-white border border-gray-200 rounded-lg shadow-md"
-              >
-                <strong className="text-blue-600">{task.taskName}</strong>
-<p className="text-gray-600">{task.relatedSubject}</p>
-<p className="text-gray-500">Deadline: {new Date(task.deadline).toLocaleDateString()}</p>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="italic text-gray-500">No tasks for this date.</p>
-        )}
+              {tasks.length > 0 ? (
+                <ul className="space-y-3">
+                  {tasks.map((task) => (
+                    <li key={task._id} className="p-3 border hover:shadow-md transition bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <strong className="text-indigo-600 dark:text-indigo-400">{task.taskName}</strong>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${task.status === "Completed" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>{task.status || "Pending"}</span>
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">{task.relatedSubject}</p>
+                      <p className="text-xs text-gray-500">Deadline: {new Date(task.deadline).toLocaleDateString()}</p>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="italic text-gray-500">No tasks for this date.</p>
+              )}
 
-        <button
-          onClick={handleAddTask}
-          className="px-5 py-2 mt-6 text-white transition-all bg-blue-600 rounded-lg hover:bg-blue-700"
-        >
-          ➕ Add Task
-        </button>
+              <div className="mt-4">
+                <button onClick={handleAddTask} className="w-full px-4 py-2 font-medium text-white bg-indigo-600 rounded-full hover:bg-indigo-700">Add/Manage Tasks</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

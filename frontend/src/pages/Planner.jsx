@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { FaEdit, FaTrash } from "react-icons/fa";
+import Button from "../components/ui/Button";
+import { toast } from "react-hot-toast";
 
 const Planner = () => {
   const [planner, setPlanner] = useState([]);
@@ -85,11 +87,11 @@ const Planner = () => {
         );
         setPlanner(planner.map((p) => (p._id === editingId ? res.data : p)));
         setEditingId(null);
-        alert("✏️ Planner updated successfully!");
+        toast.success("Planner updated");
       } else {
         const res = await axios.post("http://localhost:5000/api/planner", dataToSend);
         setPlanner([...planner, res.data]);
-        alert("📅 Planner entry added!");
+        toast.success("Planner entry added");
       }
 
       setFormData({
@@ -104,7 +106,7 @@ const Planner = () => {
       });
     } catch (err) {
       console.error("Error saving planner entry:", err);
-      alert("Error saving planner entry! Check console for details.");
+      toast.error("Error saving planner entry");
     }
   };
 
@@ -130,9 +132,10 @@ const Planner = () => {
     try {
       await axios.delete(`http://localhost:5000/api/planner/${id}`);
       setPlanner(planner.filter((p) => p._id !== id));
+      toast.success("Deleted");
     } catch (err) {
       console.error("Error deleting planner:", err);
-      alert("Error deleting planner entry!");
+      toast.error("Error deleting planner entry");
     }
   };
 
@@ -163,8 +166,8 @@ const Planner = () => {
 
   // Submit a study session
   const submitLog = async (plannerId) => {
-    if (!userId) return alert("Please login again.");
-    if (!logData.date || logData.hours === "") return alert("Enter date and hours.");
+    if (!userId) return toast.error("Please login again");
+    if (!logData.date || logData.hours === "") return toast.error("Enter date and hours");
 
     try {
       const payload = {
@@ -175,18 +178,18 @@ const Planner = () => {
         notes: logData.notes || "",
       };
       await axios.post("http://localhost:5000/api/sessions", payload);
-      alert("✅ Logged study hours!");
+      toast.success("Logged study hours");
       closeLogUI();
       // refresh sessions so UI updates
       fetchSessions();
     } catch (err) {
       console.error("Error logging hours:", err);
-      alert("Error logging hours. See console.");
+      toast.error("Error logging hours");
     }
   };
 
   return (
-    <div className="max-w-5xl p-6 mx-auto mt-8 rounded-lg shadow-md bg-gray-50">
+    <div className="max-w-5xl p-6 mx-auto rounded-lg shadow-md bg-white dark:bg-gray-800">
       <h1 className="mb-4 text-3xl font-bold text-center text-indigo-600">
         🧩 Create Study Planner
       </h1>
@@ -243,9 +246,11 @@ const Planner = () => {
           <textarea name="notes" value={formData.notes} onChange={handleChange} placeholder="Write notes or description..." className="w-full p-2 border rounded" rows="3" />
         </div>
 
-        <button type="submit" className="col-span-2 py-2 text-white bg-indigo-600 rounded hover:bg-indigo-700">
-          {editingId ? "Update Planner Entry" : "Add Subject to Planner"}
-        </button>
+        <div className="col-span-2">
+          <Button type="submit" className="w-full">
+            {editingId ? "Update Planner Entry" : "Add Subject to Planner"}
+          </Button>
+        </div>
       </form>
 
       {/* ---- Filters ---- */}
@@ -278,7 +283,7 @@ const Planner = () => {
           {filteredPlanner.map((plan) => {
             const hoursDone = hoursDoneForPlanner(plan._id);
             return (
-              <div key={plan._id} className="relative p-4 transition bg-white border rounded shadow-sm hover:shadow-md">
+              <div key={plan._id} className="relative p-4 transition bg-white dark:bg-gray-900 border rounded shadow-sm hover:shadow-md">
                 <div className="absolute flex gap-3 top-2 right-2">
                   <FaEdit className="text-blue-500 cursor-pointer" onClick={() => handleEdit(plan)} />
                   <FaTrash className="text-red-500 cursor-pointer" onClick={() => handleDelete(plan._id)} />
@@ -299,13 +304,13 @@ const Planner = () => {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <button onClick={() => openLogUI(plan)} className="px-3 py-1 text-white bg-blue-600 rounded">Log Hours</button>
+                    <Button onClick={() => openLogUI(plan)} variant="secondary">Log Hours</Button>
                   </div>
                 </div>
 
                 {/* Inline log UI */}
                 {showLogFor === plan._id && (
-                  <div className="p-3 mt-3 border rounded bg-gray-50">
+                  <div className="p-3 mt-3 border rounded bg-gray-50 dark:bg-gray-800">
                     <div className="flex items-center gap-2 mb-2">
                       <label className="text-sm">Date:</label>
                       <input type="date" value={logData.date} onChange={(e) => setLogData({ ...logData, date: e.target.value })} className="p-1 border rounded" />
@@ -316,8 +321,8 @@ const Planner = () => {
                       <textarea placeholder="Notes (optional)" value={logData.notes} onChange={(e) => setLogData({ ...logData, notes: e.target.value })} className="w-full p-2 border rounded" rows="2" />
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={() => submitLog(plan._id)} className="px-3 py-1 text-white bg-green-600 rounded">Save</button>
-                      <button onClick={closeLogUI} className="px-3 py-1 bg-gray-300 rounded">Cancel</button>
+                      <Button onClick={() => submitLog(plan._id)} variant="success">Save</Button>
+                      <Button onClick={closeLogUI} variant="secondary">Cancel</Button>
                     </div>
                   </div>
                 )}

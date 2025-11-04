@@ -1,6 +1,5 @@
 // src/pages/Dashboard.jsx
 /*import React from "react";
-import Sidebar from "../components/Sidebar";
 import QuoteWidget from "../components/QuoteWidget";
 
 export default function Dashboard() {
@@ -35,6 +34,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import Sidebar from "../components/Sidebar";
 import QuoteWidget from "../components/QuoteWidget";
 import axios from "axios";
+import { motion } from "framer-motion";
 import {
   PieChart,
   Pie,
@@ -42,7 +42,14 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
 } from "recharts";
+import Skeleton from "../components/ui/Skeleton";
+import AIAssistant from "../components/AIAssistant";
 
 const COLORS = ["#4F46E5", "#10B981", "#F97316"]; // primary, completed, overdue
 
@@ -52,6 +59,7 @@ export default function Dashboard() {
   const [todayPlanners, setTodayPlanners] = useState([]); // planners for today
   const [allTasks, setAllTasks] = useState([]); // for weekly stats maybe
   const [allPlanners, setAllPlanners] = useState([]);
+  const [allSessions, setAllSessions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [quote, setQuote] = useState(null);
 
@@ -64,6 +72,56 @@ export default function Dashboard() {
     }
   })();
   const userId = storedUser ? storedUser._id : null;
+  const userName = storedUser?.name || "there";
+
+  // Quick To-Do (localStorage-backed)
+  const [quickTodos, setQuickTodos] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("quickTodos")) || [];
+    } catch {
+      return [];
+    }
+  });
+  const [newTodoText, setNewTodoText] = useState("");
+  const [newTodoColor, setNewTodoColor] = useState("#FDE68A");
+  const [editingId, setEditingId] = useState(null);
+  const [editingText, setEditingText] = useState("");
+
+  const persistTodos = (list) => {
+    setQuickTodos(list);
+    localStorage.setItem("quickTodos", JSON.stringify(list));
+  };
+
+  const addTodo = (e) => {
+    e.preventDefault();
+    if (!newTodoText.trim()) return;
+    const item = { id: Date.now(), text: newTodoText.trim(), done: false, color: newTodoColor };
+    const list = [item, ...quickTodos];
+    persistTodos(list);
+    setNewTodoText("");
+  };
+
+  const toggleTodo = (id) => {
+    const list = quickTodos.map(t => t.id === id ? { ...t, done: !t.done } : t);
+    persistTodos(list);
+  };
+
+  const deleteTodo = (id) => {
+    const list = quickTodos.filter(t => t.id !== id);
+    persistTodos(list);
+  };
+
+  const beginEdit = (t) => {
+    setEditingId(t.id);
+    setEditingText(t.text);
+  };
+
+  const saveEdit = () => {
+    const list = quickTodos.map(t => t.id === editingId ? { ...t, text: editingText } : t);
+    persistTodos(list);
+    setEditingId(null);
+    setEditingText("");
+  };
 
   // Live time update
   useEffect(() => {
@@ -84,6 +142,11 @@ export default function Dashboard() {
     if (!userId) return;
     setLoading(true);
     try {
+      // ensure auth header on initial load
+      const token = localStorage.getItem("token");
+      if (token) {
+        axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      }
       const todayKey = toDateKey(now);
 
       // 1) tasks with deadline exactly today
@@ -106,10 +169,16 @@ export default function Dashboard() {
         `http://localhost:5000/api/planner/${userId}`
       );
 
+      // 5) all study sessions (used for completed hours)
+      const allSessionsRes = await axios.get(
+        `http://localhost:5000/api/sessions/user/${userId}`
+      );
+
       setTodayTasks(tasksRes.data || []);
       setTodayPlanners(plannersRes.data || []);
       setAllTasks(allTasksRes.data || []);
       setAllPlanners(allPlannersRes.data || []);
+      setAllSessions(allSessionsRes.data || []);
     } catch (err) {
       console.error("Dashboard fetch error:", err);
     } finally {
@@ -158,7 +227,7 @@ export default function Dashboard() {
 
     // Hours planned vs hours completed today:
     // planned hours = sum of planner.targetHours for today (and dailyGoal entries count as targetHours per day)
-    // completedHours = sum of estimatedTime for tasks with status Completed and deadline today
+    // completedHours = sum of study sessions hours logged for today
     const plannedHours = todayPlanners.reduce((acc, p) => {
       // targetHours might be number or string
       const th = Number(p.targetHours || 0);
@@ -166,10 +235,12 @@ export default function Dashboard() {
       return acc + (isNaN(th) ? 0 : th);
     }, 0);
 
-    const completedHours = todayTasks.reduce((acc, t) => {
-      if (t.status === "Completed") {
-        const et = Number(t.estimatedTime || t.estimatedTime === 0 ? t.estimatedTime : 0);
-        return acc + (isNaN(et) ? 0 : Number(et));
+    const todayKey = toDateKey(now);
+    const completedHours = (allSessions || []).reduce((acc, s) => {
+      const sKey = toDateKey(s.date);
+      if (sKey === todayKey) {
+        const h = Number(s.hours) || 0;
+        return acc + h;
       }
       return acc;
     }, 0);
@@ -200,12 +271,12 @@ export default function Dashboard() {
 
       const plannedForDay = plannersForDay.reduce((acc, p) => acc + (Number(p.targetHours) || 0), 0);
 
-      const tasksForDay = allTasks.filter((t) => {
-        if (!t.deadline) return false;
-        return toDateKey(t.deadline) === dayKey;
-      });
-
-      const completedForDay = tasksForDay.reduce((acc, t) => acc + ((t.status === "Completed") ? (Number(t.estimatedTime) || 0) : 0), 0);
+      // sessions completed on that day
+      const completedForDay = (allSessions || []).reduce((acc, s) => {
+        const sKey = toDateKey(s.date);
+        if (sKey === dayKey) return acc + (Number(s.hours) || 0);
+        return acc;
+      }, 0);
 
       return {
         day: dayKey,
@@ -244,15 +315,14 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex">
-      <Sidebar />
-
-      <div className="w-full min-h-screen p-8 ml-64 bg-gray-50">
-        {/* Top bar */}
+      <motion.div className="w-full" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+        {/* Top bar */
+        }
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-extrabold text-indigo-700">StudyNsquare</h1>
-            <p className="mt-2 text-gray-700">{quote && <em>“{quote}”</em>}</p>
+            <p className="mt-1 text-gray-700">{quote && <em>“{quote}”</em>}</p>
+            <p className="mt-1 text-sm text-gray-500">Hello, {userName} 👋</p>
           </div>
 
           <div className="text-right">
@@ -266,7 +336,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {/* Left column: Today's tasks & planners */}
           <div className="space-y-4 md:col-span-2">
-            <div className="p-4 bg-white shadow rounded-xl">
+            <motion.div className="p-4 bg-white dark:bg-gray-800 shadow rounded-xl" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-lg font-semibold">Today's Plans & Tasks</h2>
                 <div className="text-sm text-gray-500">{loading ? "Refreshing..." : "Live"}</div>
@@ -275,7 +345,12 @@ export default function Dashboard() {
               {/* today's planners */}
               <div className="mb-3">
                 <h3 className="mb-2 text-sm text-gray-600">Planned study (today)</h3>
-                {todayPlanners.length === 0 ? (
+                {loading ? (
+                  <div className="grid grid-cols-1 gap-2">
+                    <Skeleton className="h-12" />
+                    <Skeleton className="h-12" />
+                  </div>
+                ) : todayPlanners.length === 0 ? (
                   <p className="text-gray-500">No planner entries for today.</p>
                 ) : (
                   <ul className="space-y-2">
@@ -297,7 +372,12 @@ export default function Dashboard() {
               {/* today's tasks */}
               <div>
                 <h3 className="mb-2 text-sm text-gray-600">Tasks due today</h3>
-                {todayTasks.length === 0 ? (
+                {loading ? (
+                  <div className="grid grid-cols-1 gap-2">
+                    <Skeleton className="h-14" />
+                    <Skeleton className="h-14" />
+                  </div>
+                ) : todayTasks.length === 0 ? (
                   <p className="text-gray-500">No tasks due today.</p>
                 ) : (
                   <ul className="space-y-2">
@@ -316,10 +396,10 @@ export default function Dashboard() {
                   </ul>
                 )}
               </div>
-            </div>
+            </motion.div>
 
             {/* Progress bars (Daily & Weekly) */}
-            <div className="grid grid-cols-1 gap-4 p-4 bg-white shadow rounded-xl md:grid-cols-2">
+            <motion.div className="grid grid-cols-1 gap-4 p-4 bg-white dark:bg-gray-800 shadow rounded-xl md:grid-cols-2" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
               <div>
                 <h4 className="mb-2 font-semibold">Daily Progress</h4>
                 <div className="mb-1 text-sm text-gray-500">Hours: {metrics.completedHours}/{metrics.plannedHours} hrs</div>
@@ -359,12 +439,79 @@ export default function Dashboard() {
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
+
+            {/* Weekly Bar Chart */}
+            <motion.div className="p-4 bg-white dark:bg-gray-800 shadow rounded-xl" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+              <h3 className="mb-2 font-semibold">Last 7 Days Progress</h3>
+              <div style={{ width: "100%", height: 260 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={metrics.weekly} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="day" tickFormatter={(d) => d.slice(5)} />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="planned" name="Planned" fill="#9CA3AF" />
+                    <Bar dataKey="completed" name="Completed" fill="#4F46E5" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </motion.div>
+
+            {/* AI Assistant under progress to declutter right column */}
+            <AIAssistant />
           </div>
 
-          {/* Right column: Deadlines + Pie */}
+          {/* Right column: Quick To-Do + Deadlines + Pie */}
           <div className="space-y-4">
-            <div className="p-4 bg-white shadow rounded-xl">
+            {/* Quick To-Do */}
+            <motion.div className="p-4 bg-white dark:bg-gray-800 shadow rounded-xl" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+              <h3 className="mb-3 font-semibold">Quick To-Do</h3>
+              <form onSubmit={addTodo} className="flex items-center gap-2 mb-3">
+                <input
+                  type="text"
+                  value={newTodoText}
+                  onChange={(e) => setNewTodoText(e.target.value)}
+                  placeholder="Add a quick note/task..."
+                  className="flex-1 p-2 border rounded"
+                />
+                <input
+                  type="color"
+                  title="Highlight color"
+                  value={newTodoColor}
+                  onChange={(e) => setNewTodoColor(e.target.value)}
+                  className="w-10 h-10 p-1 rounded"
+                />
+                <button className="px-3 py-2 text-white bg-indigo-600 rounded hover:bg-indigo-700">Add</button>
+              </form>
+
+              {quickTodos.length === 0 ? (
+                <p className="text-sm text-gray-500">No quick todos yet.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {quickTodos.map((t) => (
+                    <li key={t.id} className="p-2 border rounded flex items-center gap-2" style={{ background: t.color + "20" }}>
+                      <input type="checkbox" checked={t.done} onChange={() => toggleTodo(t.id)} />
+                      {editingId === t.id ? (
+                        <>
+                          <input className="flex-1 p-1 border rounded" value={editingText} onChange={(e) => setEditingText(e.target.value)} />
+                          <button onClick={saveEdit} className="px-2 py-1 text-white bg-green-600 rounded">Save</button>
+                          <button onClick={() => { setEditingId(null); setEditingText(""); }} className="px-2 py-1 bg-gray-300 rounded">Cancel</button>
+                        </>
+                      ) : (
+                        <>
+                          <div className={`flex-1 ${t.done ? "line-through text-gray-400" : ""}`}>{t.text}</div>
+                          <button onClick={() => beginEdit(t)} className="px-2 py-1 bg-gray-200 rounded">Edit</button>
+                          <button onClick={() => deleteTodo(t.id)} className="px-2 py-1 text-white bg-red-600 rounded">Delete</button>
+                        </>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </motion.div>
+            <motion.div className="p-4 bg-white dark:bg-gray-800 shadow rounded-xl" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
               <h3 className="mb-3 font-semibold">📌 Upcoming Deadlines</h3>
               {/* show next 5 upcoming deadlines from allTasks */}
               {allTasks && allTasks.length > 0 ? (
@@ -388,36 +535,41 @@ export default function Dashboard() {
               ) : (
                 <p className="text-gray-500">No upcoming deadlines.</p>
               )}
-            </div>
+            </motion.div>
 
-            <div className="p-4 bg-white shadow rounded-xl">
+            <motion.div className="p-4 bg-white dark:bg-gray-800 shadow rounded-xl" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
               <h3 className="mb-3 font-semibold">Task Status (Today)</h3>
-              <div style={{ width: "100%", height: 220 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      innerRadius={50}
-                      outerRadius={80}
-                      dataKey="value"
-                      label={(entry) => (entry.value > 0 ? `${entry.name} (${entry.value})` : "")}
-                    >
-                      {pieData.map((entry, idx) => (
-                        <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
+              {metrics.total === 0 ? (
+                <div className="flex items-center justify-center h-40 text-sm text-gray-500">
+                  No tasks today.
+                </div>
+              ) : (
+                <div style={{ width: "100%", height: 220 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={pieData}
+                        innerRadius={50}
+                        outerRadius={80}
+                        dataKey="value"
+                        label={(entry) => (entry.value > 0 ? `${entry.name} (${entry.value})` : "")}
+                      >
+                        {pieData.map((entry, idx) => (
+                          <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
               <div className="mt-2 text-sm text-gray-600">
                 Completed: {metrics.completed} • Pending: {metrics.pending} • Overdue: {metrics.overdue}
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
-      </div>
-    </div>
+      </motion.div>
   );
 }

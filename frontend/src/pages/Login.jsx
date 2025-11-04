@@ -1,5 +1,7 @@
 import React, { useState } from "react";
+import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
 
 const Login = () => {
   const [form, setForm] = useState({ email: "", password: "" });
@@ -22,16 +24,19 @@ const Login = () => {
       const data = await response.json();
 
       if (response.ok) {
-        // ✅ Store user info locally
+        if (data.token) {
+          localStorage.setItem("token", data.token);
+          axios.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
+        }
         localStorage.setItem("user", JSON.stringify(data.user));
-        alert("Login successful ✅");
-        navigate("/dashboard"); // ✅ Redirect to dashboard
+        toast.success("Logged in successfully");
+        navigate("/dashboard");
       } else {
-        alert(data.message || "Invalid credentials ❌");
+        toast.error(data.message || "Invalid credentials");
       }
     } catch (error) {
       console.error("🔥 Login error:", error);
-      alert("Server error during login ❌");
+      toast.error("Server error during login");
     } finally {
       setLoading(false);
     }

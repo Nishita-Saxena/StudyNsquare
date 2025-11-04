@@ -28,8 +28,10 @@ router.post("/register", async (req, res) => {
     const newUser = new User({ name, email, password: hashedPassword, field, goalHours  });
     await newUser.save();
 
+    const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+
     console.log("✅ User saved successfully:", newUser.email);
-    res.status(201).json({ message: "User registered successfully" });
+    res.status(201).json({ message: "User registered successfully", token, user: { _id: newUser._id, name: newUser.name, email: newUser.email, field: newUser.field, goalHours: newUser.goalHours } });
   } catch (err) {
     console.error("❌ Error registering user:", err);
     res.status(500).json({ message: "Server error during registration" });
@@ -81,7 +83,9 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ message: "Invalid password" });
     }
 
-    res.json({ message: "Login successful", user });
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+
+    res.json({ message: "Login successful", token, user: { _id: user._id, name: user.name, email: user.email, field: user.field, goalHours: user.goalHours } });
   } catch (error) {
     console.error("🔥 Error during login:", error);
     res.status(500).json({ message: "Error logging in", error: error.message });
