@@ -17,7 +17,7 @@ The purpose of the project is to make studying more structured and data-driven �
 
 
 
-Smart-Study-Planner/
+StudyNsquare/
 │
 ├── backend/                          # Backend (Node.js + Express + MongoDB)
 │   ├── middleware/
