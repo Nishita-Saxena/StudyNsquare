@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const Signup = () => {
   const [form, setForm] = useState({
@@ -10,26 +12,46 @@ const Signup = () => {
     goalHours: "",
   });
 
+  const [message, setMessage] = useState("");
+  const navigate = useNavigate();
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Signup Data:", form);
-    // You can later connect this to backend (MongoDB + Express)
+
+    if (form.password !== form.confirmPassword) {
+      setMessage("Passwords do not match ❌");
+      return;
+    }
+
+    try {
+      const response = await axios.post("http://localhost:5000/api/auth/register", {
+        name: form.name,
+        email: form.email,
+        password: form.password,
+      });
+
+      setMessage("✅ Signup successful! Redirecting...");
+      setTimeout(() => navigate("/login"), 1500);
+    } catch (error) {
+      console.error(error);
+      setMessage("Signup failed ❌ (maybe user already exists)");
+    }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] px-4">
-      <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md">
+      <div className="w-full max-w-md p-8 bg-white shadow-lg rounded-2xl">
         <h2 className="text-2xl font-semibold text-[#5C6BC0] mb-6 text-center">
           Create Your Account
         </h2>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div>
-            <label className="block text-sm text-gray-700 mb-1">Full Name</label>
+            <label className="block mb-1 text-sm text-gray-700">Full Name</label>
             <input
               type="text"
               name="name"
@@ -41,7 +63,7 @@ const Signup = () => {
           </div>
 
           <div>
-            <label className="block text-sm text-gray-700 mb-1">Email</label>
+            <label className="block mb-1 text-sm text-gray-700">Email</label>
             <input
               type="email"
               name="email"
@@ -53,7 +75,7 @@ const Signup = () => {
           </div>
 
           <div>
-            <label className="block text-sm text-gray-700 mb-1">Password</label>
+            <label className="block mb-1 text-sm text-gray-700">Password</label>
             <input
               type="password"
               name="password"
@@ -65,7 +87,7 @@ const Signup = () => {
           </div>
 
           <div>
-            <label className="block text-sm text-gray-700 mb-1">Confirm Password</label>
+            <label className="block mb-1 text-sm text-gray-700">Confirm Password</label>
             <input
               type="password"
               name="confirmPassword"
@@ -77,7 +99,7 @@ const Signup = () => {
           </div>
 
           <div>
-            <label className="block text-sm text-gray-700 mb-1">Field of Study</label>
+            <label className="block mb-1 text-sm text-gray-700">Field of Study</label>
             <select
               name="field"
               value={form.field}
@@ -96,7 +118,9 @@ const Signup = () => {
           </div>
 
           <div>
-            <label className="block text-sm text-gray-700 mb-1">Daily Study Goal (hours)</label>
+            <label className="block mb-1 text-sm text-gray-700">
+              Daily Study Goal (hours)
+            </label>
             <input
               type="number"
               name="goalHours"
@@ -116,7 +140,11 @@ const Signup = () => {
           </button>
         </form>
 
-        <p className="text-center text-sm text-gray-600 mt-4">
+        {message && (
+          <p className="mt-4 text-sm text-center text-gray-700">{message}</p>
+        )}
+
+        <p className="mt-4 text-sm text-center text-gray-600">
           Already have an account?{" "}
           <a href="/login" className="text-[#5C6BC0] hover:underline">
             Log in
