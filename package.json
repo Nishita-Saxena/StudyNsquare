@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "groq-sdk": "^0.36.0",
     "react-calendar": "^3.9.0"
   }
 }

@@ -1,50 +1,38 @@
 import express from "express";
+import dotenv from "dotenv";
+import Groq from "groq-sdk";
+
+dotenv.config();
 
 const router = express.Router();
 
+const client = new Groq({
+  apiKey: process.env.GROQ_API_KEY
+});
+
 // POST /api/ai/chat
-// body: { messages: [{ role: "user"|"assistant"|"system", content: string }] }
 router.post("/chat", async (req, res) => {
   try {
     const { messages } = req.body || {};
+
     if (!Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ message: "messages array required" });
     }
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      // Fallback friendly response when no key configured
-      return res.json({ reply: "AI is not configured yet. Set OPENAI_API_KEY in the backend to enable responses." });
-    }
-
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages,
-        temperature: 0.2,
-      }),
+    const completion = await client.chat.completions.create({
+      model: "llama3-70b-8192",
+      messages: messages,
+      temperature: 0.7
     });
 
-    if (!response.ok) {
-      const errTxt = await response.text();
-      return res.status(500).json({ message: "Upstream AI error", details: errTxt });
-    }
+    const reply = completion.choices[0].message.content;
 
-    const data = await response.json();
-    const reply = data?.choices?.[0]?.message?.content || "";
     res.json({ reply });
+
   } catch (err) {
-    console.error("AI chat error:", err);
-    res.status(500).json({ message: "Server error" });
+    console.error("❌ AI error:", err);
+    res.status(500).json({ message: "AI Server Error" });
   }
 });
 
 export default router;
-
-
-
