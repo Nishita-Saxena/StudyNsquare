@@ -8,35 +8,31 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5000/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
+      const { data } = await axios.post(
+        "http://localhost:5000/api/auth/login",
+        form
+      );
 
-      const data = await response.json();
+      // Save token
+      localStorage.setItem("token", data.token);
+      axios.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
 
-      if (response.ok) {
-        if (data.token) {
-          localStorage.setItem("token", data.token);
-          axios.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
-        }
-        localStorage.setItem("user", JSON.stringify(data.user));
-        toast.success("Logged in successfully");
-        navigate("/dashboard");
-      } else {
-        toast.error(data.message || "Invalid credentials");
-      }
+      // Save user
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      toast.success("Logged in successfully");
+      navigate("/dashboard");
     } catch (error) {
       console.error("🔥 Login error:", error);
-      toast.error("Server error during login");
+      toast.error(error.response?.data?.message || "Invalid email or password");
     } finally {
       setLoading(false);
     }

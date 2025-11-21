@@ -33,15 +33,19 @@ const Signup = () => {
         name: form.name,
         email: form.email,
         password: form.password,
+        field: form.field,
+        goalHours: form.goalHours,
       });
 
-      setMessage("✅ Signup successful! Redirecting...");
-      toast.success("Signup successful");
+      console.log("Signup response:", response.data);
+
+      toast.success("Signup successful!");
+      setMessage("Signup successful! Redirecting...");
       setTimeout(() => navigate("/login"), 1500);
     } catch (error) {
-      console.error(error);
-      setMessage("Signup failed ❌ (maybe user already exists)");
-      toast.error("Signup failed");
+      console.error("Signup error:", error.response?.data || error);
+      toast.error(error.response?.data?.message || "Signup failed");
+      setMessage(error.response?.data?.message || "Signup failed ❌");
     }
   };
 

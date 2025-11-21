@@ -1,34 +1,4 @@
-// src/pages/Dashboard.jsx
-/*import React from "react";
-import QuoteWidget from "../components/QuoteWidget";
 
-export default function Dashboard() {
-  const deadlines = [
-    { task: "Math Assignment", due: "2025-11-05" },
-    { task: "AI Project", due: "2025-11-08" },
-  ];
-
-  return (
-    <div className="flex">
-      <Sidebar />
-      <div className="w-full min-h-screen p-8 ml-64 bg-gray-50">
-        <h1 className="mb-4 text-3xl font-bold">Welcome back 👋</h1>
-        <QuoteWidget />
-        <div className="mt-8">
-          <h2 className="mb-3 text-xl font-semibold">📅 Upcoming Deadlines</h2>
-          <div className="grid grid-cols-2 gap-4">
-            {deadlines.map((d, i) => (
-              <div key={i} className="p-4 bg-white shadow rounded-xl">
-                <h3 className="font-bold">{d.task}</h3>
-                <p className="text-gray-600">Due: {d.due}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}*/
 // frontend/src/pages/Dashboard.jsx
 import React, { useEffect, useState, useMemo } from "react";
 import Sidebar from "../components/Sidebar";
@@ -336,7 +306,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {/* Left column: Today's tasks & planners */}
           <div className="space-y-4 md:col-span-2">
-            <motion.div className="p-4 bg-white dark:bg-gray-800 shadow rounded-xl" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+            <motion.div className="p-4 bg-white shadow dark:bg-gray-800 rounded-xl" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-lg font-semibold">Today's Plans & Tasks</h2>
                 <div className="text-sm text-gray-500">{loading ? "Refreshing..." : "Live"}</div>
@@ -399,7 +369,7 @@ export default function Dashboard() {
             </motion.div>
 
             {/* Progress bars (Daily & Weekly) */}
-            <motion.div className="grid grid-cols-1 gap-4 p-4 bg-white dark:bg-gray-800 shadow rounded-xl md:grid-cols-2" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+            <motion.div className="grid grid-cols-1 gap-4 p-4 bg-white shadow dark:bg-gray-800 rounded-xl md:grid-cols-2" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
               <div>
                 <h4 className="mb-2 font-semibold">Daily Progress</h4>
                 <div className="mb-1 text-sm text-gray-500">Hours: {metrics.completedHours}/{metrics.plannedHours} hrs</div>
@@ -442,7 +412,7 @@ export default function Dashboard() {
             </motion.div>
 
             {/* Weekly Bar Chart */}
-            <motion.div className="p-4 bg-white dark:bg-gray-800 shadow rounded-xl" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+            <motion.div className="p-4 bg-white shadow dark:bg-gray-800 rounded-xl" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
               <h3 className="mb-2 font-semibold">Last 7 Days Progress</h3>
               <div style={{ width: "100%", height: 260 }}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -466,7 +436,7 @@ export default function Dashboard() {
           {/* Right column: Quick To-Do + Deadlines + Pie */}
           <div className="space-y-4">
             {/* Quick To-Do */}
-            <motion.div className="p-4 bg-white dark:bg-gray-800 shadow rounded-xl" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+            <motion.div className="p-4 bg-white shadow dark:bg-gray-800 rounded-xl" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
               <h3 className="mb-3 font-semibold">Quick To-Do</h3>
               <form onSubmit={addTodo} className="flex items-center gap-2 mb-3">
                 <input
@@ -491,7 +461,7 @@ export default function Dashboard() {
               ) : (
                 <ul className="space-y-2">
                   {quickTodos.map((t) => (
-                    <li key={t.id} className="p-2 border rounded flex items-center gap-2" style={{ background: t.color + "20" }}>
+                    <li key={t.id} className="flex items-center gap-2 p-2 border rounded" style={{ background: t.color + "20" }}>
                       <input type="checkbox" checked={t.done} onChange={() => toggleTodo(t.id)} />
                       {editingId === t.id ? (
                         <>
@@ -511,7 +481,7 @@ export default function Dashboard() {
                 </ul>
               )}
             </motion.div>
-            <motion.div className="p-4 bg-white dark:bg-gray-800 shadow rounded-xl" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+            <motion.div className="p-4 bg-white shadow dark:bg-gray-800 rounded-xl" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
               <h3 className="mb-3 font-semibold">📌 Upcoming Deadlines</h3>
               {/* show next 5 upcoming deadlines from allTasks */}
               {allTasks && allTasks.length > 0 ? (
@@ -537,7 +507,7 @@ export default function Dashboard() {
               )}
             </motion.div>
 
-            <motion.div className="p-4 bg-white dark:bg-gray-800 shadow rounded-xl" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+            <motion.div className="p-4 bg-white shadow dark:bg-gray-800 rounded-xl" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
               <h3 className="mb-3 font-semibold">Task Status (Today)</h3>
               {metrics.total === 0 ? (
                 <div className="flex items-center justify-center h-40 text-sm text-gray-500">
